@@ -1,0 +1,42 @@
+name: Update NSE data
+on:
+  schedule:
+    - cron: "30 11 * * 1-5"   # 17:00 IST (11:30 UTC), Mon-Fri, after market close
+  workflow_dispatch:           # lets you run it manually from the Actions tab
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install yfinance pandas requests
+      - uses: actions/cache@v4          # keeps Yahoo industry lookups between runs
+        with:
+          path: yahoo_*_cache.json
+          key: yahoo-cache-${{ github.run_id }}
+          restore-keys: yahoo-cache-
+      - run: python nse_industry.py --level sector   # remove "--level sector" for ~140 Yahoo industries
+      - run: mkdir site && mv industry.json site/ && cp index.html site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NSE Industry Tracker</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#667085;--bd:#e3e6eb;--up:#16a34a;--dn:#dc2626;--ac:#2563eb;--hl:#eef4ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mu:#8b94a3;--bd:#262c36;--up:#22c55e;--dn:#ef4444;--ac:#60a5fa;--hl:#1c2740}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mu:#8b94a3;--bd:#262c36;--up:#22c55e;--dn:#ef4444;--ac:#60a5fa;--hl:#1c2740}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:21px;margin:0 0 2px}h2{font-size:15px;margin:0 0 8px}
+.sub{color:var(--mu);font-size:13px;margin-bottom:12px}
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.badge.demo{color:#b45309;border-color:#b45309}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:14px}
+.scroll{overflow-x:auto;max-height:440px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{position:sticky;top:0;background:var(--card);cursor:pointer;color:var(--mu);font-weight:600;user-select:none}
+tr.r{cursor:pointer}tr.r:hover,tr.sel{background:var(--hl)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.pill{padding:1px 7px;border-radius:99px;font-size:12px;font-weight:600}
+.pill.up{background:color-mix(in srgb,var(--up) 15%,transparent)}.pill.dn{background:color-mix(in srgb,var(--dn) 15%,transparent)}
+.bar{display:inline-block;width:60px;height:6px;border-radius:3px;background:var(--dn);vertical-align:middle;margin-left:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--up)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+input[type=text],input[type=date],select,textarea{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:13px}
+textarea{width:100%;height:60px;font:12px monospace}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+button.g{background:var(--bg);color:var(--tx);border:1px solid var(--bd)}
+svg{width:100%;height:auto;display:block}
+code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;margin:2px 0 6px}.legend label{display:flex;align-items:center;gap:4px;cursor:pointer}.legend span{width:10px;height:10px;border-radius:2px;display:inline-block}
+</style></head><body><main>
+<h1>NSE Industry Tracker</h1>
+<div class="sub">Equal-weighted industry indices · stocks vs 10 &amp; 20 EMA · as of <span id="d"></span> · <span id="b" class="badge"></span></div>
+
+<div class="panel"><h2>Industries <span class="sub" id="ic"></span></h2>
+<div class="scroll" style="max-height:340px"><table id="it"></table></div></div>
+
+<div class="panel"><h2>Industry performance for a period</h2>
+<div class="tools"><label>From <input type="date" id="ps"></label><label>To <input type="date" id="pe"></label>
+<button class="g" data-y="1">1Y</button><button class="g" data-y="3">3Y</button><button class="g" data-y="5">5Y</button><button class="g" data-y="10">10Y</button><button class="g" data-y="0">All</button></div>
+<div class="sub" id="pm"></div><div class="scroll" style="max-height:340px"><table id="pt"></table></div></div>
+<div class="panel" id="dp" style="display:none"></div>
+<div class="panel"><h2>Equal-weighted index – <span id="ct"></span></h2><div class="tools"><select id="ci"></select><select id="ty"><option value="c">Candlestick</option><option value="l">Line</option></select><select id="tf"><option value="d">Daily</option><option value="w">Weekly</option><option value="m">Monthly</option></select><select id="rg"><option value="63">3M</option><option value="126">6M</option><option value="252" selected>1Y</option><option value="756">3Y</option><option value="0">All</option><option value="p">Selected period</option></select><select id="mt"><option value="e">EMA</option><option value="s">SMA</option></select></div><div class="legend" id="mal"></div><svg id="ch" viewBox="0 0 700 300"></svg><div class="sub" id="tip" style="margin:6px 0 0"></div></div>
+
+<div class="panel"><h2>Stocks <span class="sub" id="sc"></span></h2>
+<div class="tools"><input type="text" id="q" placeholder="Search symbol…">
+<select id="fl"><option value="">All stocks</option><option value="both">Above 10 &amp; 20 EMA</option><option value="none">Below 10 &amp; 20 EMA</option><option value="mix">Mixed</option></select>
+<button class="g" id="clr">Clear industry filter</button></div>
+<div class="scroll"><table id="st"></table></div></div>
+
+<div class="panel"><h2>Load your data</h2>
+<div class="sub">Run <code>python nse_industry.py</code>, then upload or paste <code>industry.json</code>.</div>
+<input type="file" id="f" accept=".json"> <textarea id="t" placeholder="Paste industry.json here"></textarea>
+<button id="go" style="margin-top:8px">Load pasted JSON</button></div>
+</main>
+<script>
+const $=i=>document.getElementById(i),fp=v=>(v>0?"+":"")+v.toFixed(2)+"%",cl=v=>v>0?"up":"dn";
+let D=demo(),sel=null,ik="n",id=-1,sk="s",sd=1,S=[];
+function demo(){let s=11,r=()=>(s=(s*16807)%2147483647)/2147483647;
+const N=["Information Technology","Financial Services","Healthcare","Automobile","Capital Goods","Chemicals","FMCG","Metals & Mining","Oil Gas & Energy","Realty","Textiles","Consumer Durables"];
+const dates=[],inds={},stocks=[];
+for(let i=7600;i>=0;i--){const t=new Date(Date.UTC(2026,9,8)-i*864e5);if(![0,6].includes(t.getUTCDay()))dates.push(t.toISOString().slice(0,10))}
+N.forEach((n,k)=>{let v=100;const x=[],o=[],h=[],l=[],dr=(r()-.5)*.25;dates.forEach(()=>{const op=v*(1+(r()-.5)*.006);v*=1+dr/100+(r()-.5)*.02;const hi=Math.max(op,v)*(1+r()*.008),lo=Math.min(op,v)*(1-r()*.008);o.push(+op.toFixed(2));h.push(+hi.toFixed(2));l.push(+lo.toFixed(2));x.push(+v.toFixed(2))});inds[n]={o,h,l,c:x};
+const cnt=5+Math.floor(r()*20),tr=x[x.length-1]/x[x.length-8]-1;
+for(let j=0;j<cnt;j++)stocks.push({s:"DEMO"+(k+1)+"-"+(j+1),i:n,c:+(50+r()*2000).toFixed(1),ch:+((r()-.5)*4).toFixed(2),d10:+((tr*60+(r()-.5)*6)).toFixed(2),d20:+((tr*80+(r()-.5)*9)).toFixed(2)})});
+return{asof:dates[dates.length-1],dates,inds,stocks,demo:true}}
+function stats(){const m={};D.stocks.forEach(s=>{const o=m[s.i]||(m[s.i]={name:s.i,n:0,a:0,b:0});o.n++;if(s.d10>0)o.a++;if(s.d20>0)o.b++});
+return Object.values(m).map(o=>{const x=(D.inds[o.name]||{c:[100,100]}).c,L=x.length;o.x=x.slice(-90);o.r1=(x[L-1]/x[L-2]-1)*100;o.r1m=(x[L-1]/x[Math.max(0,L-22)]-1)*100;o.p10=o.a/o.n*100;o.p20=o.b/o.n*100;return o})}
+function spark(x){const lo=Math.min(...x),hi=Math.max(...x),w=90,h=22;
+return`<svg viewBox="0 0 ${w} ${h}" style="width:90px;height:22px"><polyline fill="none" stroke="var(--ac)" stroke-width="1.5" points="${x.map((v,i)=>(i*w/(x.length-1)).toFixed(1)+","+(h-2-(v-lo)/((hi-lo)||1)*(h-4)).toFixed(1)).join(" ")}"/></svg>`}
+const pc=p=>`<span class="${p>=50?"up":"dn"}">${p.toFixed(0)}%</span><span class="bar"><i style="width:${p}%"></i></span>`;
+function render(){d.textContent=D.asof;b.textContent=D.demo?"Sample data":"Live data";b.className="badge"+(D.demo?" demo":"");
+S=stats();S.sort((a,c)=>(typeof a[ik]=="string"?a[ik].localeCompare(c[ik]):a[ik]-c[ik])*id*(ik=="name"?-1:1));
+ic.textContent="· "+S.length+" industries, "+D.stocks.length+" stocks";
+const H=[["name","Industry"],["n","Stocks"],["r1","1D"],["r1m","1M"],["p10","> 10 EMA"],["p20","> 20 EMA"]];
+it.innerHTML="<tr>"+H.map(h=>`<th data-k="${h[0]}">${h[1]}</th>`).join("")+"<th>Trend</th></tr>"+S.map((o,i)=>`<tr class="r${sel==o.name?" sel":""}" data-i="${i}"><td>${o.name}</td><td>${o.n}</td><td class="${cl(o.r1)}">${fp(o.r1)}</td><td class="${cl(o.r1m)}">${fp(o.r1m)}</td><td>${pc(o.p10)}</td><td>${pc(o.p20)}</td><td>${spark(o.x)}</td></tr>`).join("");
+it.querySelectorAll("th[data-k]").forEach(h=>h.onclick=()=>{const k=h.dataset.k;id=ik==k?-id:-1;ik=k;render()});
+it.querySelectorAll("tr.r").forEach(r=>r.onclick=()=>{const n=S[r.dataset.i].name;sel=sel==n?null:n;render();if(sel)$("dp").scrollIntoView({behavior:"smooth",block:"start"})});
+chart();stocks();detail();perf()}
+function detail(){const p=$("dp");if(!sel){p.style.display="none";return}
+const a=D.stocks.filter(s=>s.i==sel).sort((x,y)=>y.d10+y.d20-x.d10-x.d20);
+const mk=v=>`<span class="pill ${cl(v)}">${v>0?"✓ Above":"✗ Below"} · ${fp(v)}</span>`;
+p.style.display="";
+p.innerHTML=`<div class="tools" style="justify-content:space-between;align-items:center"><h2 style="margin:0">${sel} – ${a.length} stocks</h2><button class="g" onclick="sel=null;render()">✕ Close</button></div><div class="sub">${a.filter(s=>s.d10>0).length} above 10 EMA · ${a.filter(s=>s.d20>0).length} above 20 EMA · ${a.filter(s=>s.d10>0&&s.d20>0).length} above both · ${a.filter(s=>s.d10<=0&&s.d20<=0).length} below both</div><div class="scroll"><table><tr><th>Symbol</th><th>Close</th><th>1D</th><th>10 EMA</th><th>20 EMA</th></tr>${a.map(s=>`<tr><td>${s.s}</td><td>${s.c}</td><td class="${cl(s.ch)}">${fp(s.ch)}</td><td>${mk(s.d10)}</td><td>${mk(s.d20)}</td></tr>`).join("")}</table></div>`}
+const MAS=[10,20,50,100,200],MC=["#f59e0b","#a855f7","#0ea5e9","#14b8a6","#ec4899"];let maOn=new Set([20,50]);
+function ix(d){let lo=0,hi=D.dates.length;while(lo<hi){const m=(lo+hi)>>1;D.dates[m]<d?lo=m+1:hi=m}return lo}
+function initDates(){const f=D.dates[0],l=D.asof;ps.min=pe.min=f;ps.max=pe.max=l;pe.value=l;const t=new Date(l+"T00:00:00Z");t.setUTCFullYear(t.getUTCFullYear()-1);const v=t.toISOString().slice(0,10);ps.value=v<f?f:v}
+function perf(){const a=ix(ps.value);let e=ix(pe.value);if(D.dates[e]!==pe.value)e--;
+if(!(e>a)){pm.textContent="Pick a valid date range (at least 2 trading days).";pt.innerHTML="";return}
+const R=Object.keys(D.inds).map(n=>{const c=D.inds[n].c;let pk=c[a],dd=0;for(let i=a;i<=e;i++){pk=Math.max(pk,c[i]);dd=Math.min(dd,c[i]/pk-1)}
+return{n,r:(c[e]/c[a]-1)*100,dd:dd*100,k:D.stocks.filter(s=>s.i==n).length}}).sort((p,q)=>q.r-p.r),mx=Math.max(...R.map(o=>Math.abs(o.r)),1);
+pm.textContent=`${D.dates[a]} → ${D.dates[e]} · ${R.length} industries · ${R.filter(o=>o.r>0).length} up, ${R.filter(o=>o.r<=0).length} down · best: ${R[0].n}`;
+pt.innerHTML="<tr><th>#</th><th>Industry</th><th>Stocks</th><th>Return</th><th>Max drawdown</th><th style=\"min-width:120px\"></th></tr>"+R.map((o,i)=>`<tr class="r${sel==o.n?" sel":""}" data-n="${o.n.replace(/"/g,"&quot;")}"><td>${i+1}</td><td style="text-align:left">${o.n}</td><td>${o.k}</td><td class="${cl(o.r)}">${fp(o.r)}</td><td class="dn">${o.dd.toFixed(1)}%</td><td style="text-align:left"><div style="height:8px;width:${Math.max(2,Math.abs(o.r)/mx*100)}%;background:var(--${o.r>0?"up":"dn"});border-radius:4px"></div></td></tr>`).join("");
+pt.querySelectorAll("tr.r").forEach(r=>r.onclick=()=>{sel=r.dataset.n;render();ch.scrollIntoView({behavior:"smooth",block:"center"})})}
+function bars(name,tf){const I=D.inds[name],o=[];let key=null,b;
+D.dates.forEach((d,i)=>{let k=d;if(tf=="m")k=d.slice(0,7);else if(tf=="w"){const u=new Date(d+"T00:00:00Z");u.setUTCDate(u.getUTCDate()-(u.getUTCDay()+6)%7);k=u.toISOString().slice(0,10)}
+if(k!=key){key=k;b={d,o:I.o[i],h:I.h[i],l:I.l[i],c:I.c[i]};o.push(b)}else{b.h=Math.max(b.h,I.h[i]);b.l=Math.min(b.l,I.l[i]);b.c=I.c[i]}});return o}
+function ma(c,n,t){const o=[];if(t=="s"){let s=0;c.forEach((v,i)=>{s+=v;if(i>=n)s-=c[i-n];o.push(i>=n-1?s/n:null)})}else{const k=2/(n+1);let e=0;c.forEach((v,i)=>{e=i?v*k+e*(1-k):v;o.push(i>=n-1?e:null)})}return o}
+function chart(){const names=S.map(o=>o.name).sort(),cur=sel&&D.inds[sel]?sel:names[0],tf=$("tf").value,ty=$("ty").value,rg=$("rg").value,mt=$("mt").value;
+ci.innerHTML=names.map(n=>`<option${n==cur?" selected":""}>${n.replace(/&/g,"&amp;")}</option>`).join("");
+const all=bars(cur,tf);let a0=0,a1=all.length;
+if(rg=="p"){a0=all.findIndex(b=>b.d>=ps.value);if(a0<0)a0=all.length-1;let j=all.length;while(j>0&&all[j-1].d>pe.value)j--;a1=Math.max(j,a0+1)}
+else if(+rg){a0=Math.max(0,a1-Math.max(5,Math.ceil(+rg/(tf=="d"?1:tf=="w"?5:21))))}
+const closes=all.map(b=>b.c),B=all.slice(a0,a1),n=B.length,mas=MAS.filter(m=>maOn.has(m)).map(m=>({m,c:MC[MAS.indexOf(m)],v:ma(closes,m,mt).slice(a0,a1)}));
+ct.textContent=cur+" · "+n+" "+{d:"daily",w:"weekly",m:"monthly"}[tf]+" bars";
+let lo=Infinity,hi=-Infinity;B.forEach(b=>{lo=Math.min(lo,b.l);hi=Math.max(hi,b.h)});mas.forEach(o=>o.v.forEach(v=>{if(v!==null){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+const W=700,H=300,L=44,Bt=22,pad=(hi-lo)*.05||1,x=i=>L+(i+.5)*(W-L-8)/n,y=v=>8+(hi+pad-v)*(H-8-Bt)/(hi-lo+2*pad),line=ty=="l"||n>1500;let s="";
+for(let g=0;g<=4;g++){const v=lo+(hi-lo)*g/4;s+=`<line x1="${L}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" opacity=".12"/><text x="${L-4}" y="${y(v)+3}" font-size="10" text-anchor="end" fill="currentColor" opacity=".6">${v.toFixed(1)}</text>`}
+const bw=Math.max(1,Math.min(14,(W-L-8)/n*.7));
+if(line)s+=`<polyline fill="none" stroke="var(--ac)" stroke-width="1.8" points="${B.map((b,i)=>x(i)+","+y(b.c)).join(" ")}"/>`;
+else B.forEach((b,i)=>{const c=b.c>=b.o?"var(--up)":"var(--dn)",yo=y(b.o),yc=y(b.c);s+=`<line x1="${x(i)}" x2="${x(i)}" y1="${y(b.h)}" y2="${y(b.l)}" stroke="${c}"/><rect x="${x(i)-bw/2}" y="${Math.min(yo,yc)}" width="${bw}" height="${Math.max(1,Math.abs(yo-yc))}" fill="${c}"/>`});
+mas.forEach(o=>{s+=`<polyline fill="none" stroke="${o.c}" stroke-width="1.5" points="${o.v.map((v,i)=>v===null?"":x(i)+","+y(v)).filter(Boolean).join(" ")}"/>`});
+for(let g=0;g<=5;g++){const i=Math.round(g*(n-1)/5);s+=`<text x="${x(i)}" y="${H-5}" font-size="10" text-anchor="${g==0?"start":g==5?"end":"middle"}" fill="currentColor" opacity=".6">${B[i].d}</text>`}
+ch.innerHTML=s;ch.style.color="var(--mu)";
+const show=i=>{const b=B[i];tip.textContent=`${b.d}:  O ${b.o.toFixed(2)}   H ${b.h.toFixed(2)}   L ${b.l.toFixed(2)}   C ${b.c.toFixed(2)}`+mas.map(o=>`   ${mt=="e"?"EMA":"SMA"}${o.m} ${o.v[i]==null?"–":o.v[i].toFixed(1)}`).join("")+(n>1500&&ty!="l"?"   · too many bars for candles, use weekly/monthly":"")};show(n-1);
+ch.onmousemove=ev=>{const r=ch.getBoundingClientRect();show(Math.max(0,Math.min(n-1,Math.floor(((ev.clientX-r.left)/r.width*W-L)/((W-L-8)/n)))))}}
+function stocks(){const qq=q.value.trim().toUpperCase(),f=fl.value;
+let a=D.stocks.filter(s=>(!sel||s.i==sel)&&(!qq||s.s.includes(qq))&&(!f||(f=="both"?s.d10>0&&s.d20>0:f=="none"?s.d10<=0&&s.d20<=0:(s.d10>0)!=(s.d20>0))));
+a.sort((p,c)=>(typeof p[sk]=="string"?p[sk].localeCompare(c[sk]):p[sk]-c[sk])*sd);
+sc.textContent="· "+a.length+" shown"+(a.length>1500?" (first 1500)":"");
+const pill=v=>`<span class="pill ${cl(v)}">${v>0?"▲":"▼"} ${Math.abs(v).toFixed(2)}%</span>`;
+const H=[["s","Symbol"],["i","Industry"],["c","Close"],["ch","1D"],["d10","vs 10 EMA"],["d20","vs 20 EMA"]];
+st.innerHTML="<tr>"+H.map(h=>`<th data-k="${h[0]}">${h[1]}</th>`).join("")+"</tr>"+a.slice(0,1500).map(s=>`<tr><td>${s.s}</td><td>${s.i}</td><td>${s.c}</td><td class="${cl(s.ch)}">${fp(s.ch)}</td><td>${pill(s.d10)}</td><td>${pill(s.d20)}</td></tr>`).join("");
+st.querySelectorAll("th").forEach(h=>h.onclick=()=>{const k=h.dataset.k;sd=sk==k?-sd:1;sk=k;stocks()})}
+q.oninput=fl.onchange=stocks;ci.onchange=()=>{sel=ci.value;render()};ty.onchange=tf.onchange=rg.onchange=mt.onchange=chart;clr.onclick=()=>{sel=null;render()};
+function load(x){try{const j=JSON.parse(x);if(!j.stocks||!j.inds||!j.dates)throw 0;if(!j.inds[Object.keys(j.inds)[0]].o)throw 0;D=j;sel=null;initDates();render()}catch(e){alert("Invalid industry.json")}}
+f.onchange=()=>{const r=new FileReader();r.onload=()=>load(r.result);r.readAsText(f.files[0])};go.onclick=()=>load(t.value);
+mal.innerHTML=MAS.map((m,i)=>`<label><input type="checkbox" data-m="${m}"${maOn.has(m)?" checked":""}><span style="background:${MC[i]}"></span>MA ${m}</label>`).join("");
+mal.querySelectorAll("input").forEach(x=>x.onchange=()=>{x.checked?maOn.add(+x.dataset.m):maOn.delete(+x.dataset.m);chart()});
+document.querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{const y=+b.dataset.y,l=D.asof,t=new Date(l+"T00:00:00Z");t.setUTCFullYear(t.getUTCFullYear()-y);const v=t.toISOString().slice(0,10);pe.value=l;ps.value=y&&v>D.dates[0]?v:D.dates[0];perf();chart()});
+ps.onchange=pe.onchange=()=>{perf();chart()};initDates();
+render();
+fetch("industry.json",{cache:"no-store"}).then(r=>r.ok?r.text():Promise.reject()).then(load).catch(()=>{});
+</script></body></html>
