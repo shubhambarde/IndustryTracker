@@ -25,7 +25,7 @@ jobs:
           path: yahoo_*_cache.json
           key: yahoo-cache-${{ github.run_id }}
           restore-keys: yahoo-cache-
-      - run: python nse_industry.py --level sector   # remove "--level sector" for ~140 Yahoo industries
+      - run: python nse_industry.py   # add "--level sector" for only ~12 broad groups
       - run: mkdir site && mv industry.json site/ && cp index.html site/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
