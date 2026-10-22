@@ -42,12 +42,12 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
 <div class="panel"><h2>Industries <span class="sub" id="ic"></span></h2>
 <div class="scroll" style="max-height:340px"><table id="it"></table></div></div>
 
-<div class="panel"><h2>Export to TradingView watchlist</h2>
-<div class="tools"><select id="xs"><option value="all">All industries</option><option value="sel">Selected industry only</option></select>
+<div class="panel"><h2>Export to TradingView</h2>
+<div class="tools"><select id="xm"><option value="w">Watchlist (import file)</option><option value="e">Index formula – simple average of prices</option><option value="n">Index formula – equal-weight, normalised (ends at 100)</option><option value="r">Index formula – rank-weighted (1/n … n/n)</option><option value="rn">Index formula – rank-weighted, normalised (ends at 100)</option></select><select id="xo" title="Order used by the rank-weighted formulas: the last stock gets the highest weight"><option value="a">Rank order: A–Z</option><option value="d20">Rank order: weakest → strongest vs 20 EMA</option><option value="d10">Rank order: weakest → strongest vs 10 EMA</option></select><select id="xs"><option value="all">All industries</option><option value="sel">Selected industry only</option></select>
 <select id="xf"><option value="">All stocks</option><option value="both">Above 10 &amp; 20 EMA</option><option value="a10">Above 10 EMA</option><option value="a20">Above 20 EMA</option><option value="none">Below 10 &amp; 20 EMA</option></select>
 <button id="xc">Copy</button><button id="xd" class="g">Download .txt</button></div>
-<textarea id="xt" readonly style="height:70px"></textarea>
-<div class="sub" style="margin:6px 0 0">In TradingView: Watchlist → ⋯ → Import list, then pick the .txt file. Sections start with ### and show the stock count.</div></div>
+<textarea id="xt" readonly style="height:90px"></textarea>
+<div class="sub" style="margin:6px 0 0">Watchlist: in TradingView use Watchlist → ⋯ → Import list. Formula: pick one industry, copy, and paste it into the chart’s symbol search box to plot it as a custom index.</div></div>
 <div class="panel"><h2>Industry performance for a period</h2>
 <div class="tools"><label>From <input type="date" id="ps"></label><label>To <input type="date" id="pe"></label>
 <button class="g" data-y="1">1Y</button><button class="g" data-y="3">3Y</button><button class="g" data-y="5">5Y</button><button class="g" data-y="10">10Y</button><button class="g" data-y="0">All</button></div>
@@ -105,11 +105,13 @@ return{n,r:(c[e]/c[a]-1)*100,dd:dd*100,k:D.stocks.filter(s=>s.i==n).length}}).so
 pm.textContent=`${D.dates[a]} → ${D.dates[e]} · ${R.length} industries · ${R.filter(o=>o.r>0).length} up, ${R.filter(o=>o.r<=0).length} down · best: ${R[0].n}`;
 pt.innerHTML="<tr><th>#</th><th>Industry</th><th>Stocks</th><th>Return</th><th>Max drawdown</th><th style=\"min-width:120px\"></th></tr>"+R.map((o,i)=>`<tr class="r${sel==o.n?" sel":""}" data-n="${o.n.replace(/"/g,"&quot;")}"><td>${i+1}</td><td style="text-align:left">${o.n}</td><td>${o.k}</td><td class="${cl(o.r)}">${fp(o.r)}</td><td class="dn">${o.dd.toFixed(1)}%</td><td style="text-align:left"><div style="height:8px;width:${Math.max(2,Math.abs(o.r)/mx*100)}%;background:var(--${o.r>0?"up":"dn"});border-radius:4px"></div></td></tr>`).join("");
 pt.querySelectorAll("tr.r").forEach(r=>r.onclick=()=>{sel=r.dataset.n;render();ch.scrollIntoView({behavior:"smooth",block:"center"})})}
-function tv(){const f=xf.value,sc=xs.value,ok=s=>!f||(f=="both"?s.d10>0&&s.d20>0:f=="a10"?s.d10>0:f=="a20"?s.d20>0:s.d10<=0&&s.d20<=0),g={};
-D.stocks.forEach(s=>{if(ok(s)&&(sc=="all"||s.i==sel))(g[s.i]=g[s.i]||[]).push(s.s)});
-const ks=Object.keys(g).sort();
+function tv(){const f=xf.value,sc=xs.value,m=xm.value,o=xo.value,rk=m=="r"||m=="rn",ok=s=>!f||(f=="both"?s.d10>0&&s.d20>0:f=="a10"?s.d10>0:f=="a20"?s.d20>0:s.d10<=0&&s.d20<=0),g={};
+D.stocks.forEach(s=>{if(ok(s)&&(sc=="all"||s.i==sel))(g[s.i]=g[s.i]||[]).push(s)});
+const ks=Object.keys(g).sort();ks.forEach(k=>g[k].sort((a,b)=>(rk&&o!="a"&&a[o]-b[o])||(a.s<b.s?-1:1)));
 if(!ks.length){xt.value=sc=="sel"&&!sel?"Click an industry row first, or switch to 'All industries'.":"No stocks match this filter.";return""}
-const out=ks.map(k=>"###"+k.replace(/,/g," ")+"("+g[k].length+"),"+g[k].sort().map(y=>"NSE:"+y.replace(/[&-]/g,"_")).join(",")).join(",");
+const sy=s=>"NSE:"+s.s.replace(/[&-]/g,"_"),
+fm=k=>{const n=g[k].length,t=g[k].map((s,i)=>`(${sy(s)}${m=="n"||m=="rn"?"/"+s.c:""}*${rk?i+1:1}/${n})`).join("+");return m=="n"?"100*("+t+")":m=="rn"?"(100*2/"+(n+1)+")*("+t+")":t},
+out=m=="w"?ks.map(k=>"###"+k.replace(/,/g," ")+"("+g[k].length+"),"+g[k].map(sy).join(",")).join(","):sc=="sel"?fm(ks[0]):ks.map(k=>"# "+k+" ("+g[k].length+" stocks)\n"+fm(k)).join("\n\n");
 xt.value=out;return out}
 function bars(name,tf){const I=D.inds[name],o=[];let key=null,b;
 D.dates.forEach((d,i)=>{let k=d;if(tf=="m")k=d.slice(0,7);else if(tf=="w"){const u=new Date(d+"T00:00:00Z");u.setUTCDate(u.getUTCDate()-(u.getUTCDay()+6)%7);k=u.toISOString().slice(0,10)}
@@ -148,9 +150,9 @@ mal.innerHTML=MAS.map((m,i)=>`<label><input type="checkbox" data-m="${m}"${maOn.
 mal.querySelectorAll("input").forEach(x=>x.onchange=()=>{x.checked?maOn.add(+x.dataset.m):maOn.delete(+x.dataset.m);chart()});
 document.querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{const y=+b.dataset.y,l=D.asof,t=new Date(l+"T00:00:00Z");t.setUTCFullYear(t.getUTCFullYear()-y);const v=t.toISOString().slice(0,10);pe.value=l;ps.value=y&&v>D.dates[0]?v:D.dates[0];perf();chart()});
 ps.onchange=pe.onchange=()=>{perf();chart()};initDates();
-xs.onchange=xf.onchange=tv;
+xs.onchange=xf.onchange=xm.onchange=xo.onchange=tv;
 xc.onclick=async()=>{const t=tv();if(!t)return;try{await navigator.clipboard.writeText(t);xc.textContent="Copied ✓"}catch(e){xt.select();xc.textContent="Press Ctrl+C"}setTimeout(()=>xc.textContent="Copy",2000)};
-xd.onclick=()=>{const t=tv();if(!t)return;const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="tradingview_"+(xs.value=="sel"?sel.replace(/[^\w]+/g,"_"):"all_industries")+"_"+D.asof+".txt";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+xd.onclick=()=>{const t=tv();if(!t)return;const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="tradingview_"+(xm.value=="w"?"watchlist_":"formula_")+(xs.value=="sel"?sel.replace(/[^\w]+/g,"_"):"all_industries")+"_"+D.asof+".txt";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
 render();
 fetch("industry.json",{cache:"no-store"}).then(r=>r.ok?r.text():Promise.reject()).then(load).catch(()=>{});
 </script></body></html>
