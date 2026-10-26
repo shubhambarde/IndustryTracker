@@ -35,10 +35,22 @@ button.g{background:var(--bg);color:var(--tx);border:1px solid var(--bd)}
 svg{width:100%;height:auto;display:block}
 code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;margin:2px 0 6px}.legend label{display:flex;align-items:center;gap:4px;cursor:pointer}.legend span{width:10px;height:10px;border-radius:2px;display:inline-block}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--bd);margin-bottom:6px}.tabs button{background:none;color:var(--mu);border:0;border-bottom:2px solid transparent;border-radius:0;padding:8px 14px;font-weight:600;margin:0}.tabs button.on{color:var(--ac);border-bottom-color:var(--ac)}
+.cvg{display:grid;grid-template-columns:minmax(0,1fr) 340px;border:1px solid var(--bd);border-radius:12px;background:var(--card);overflow:hidden;height:calc(100vh - 170px);min-height:600px;margin-top:10px}
+.cvmain{display:flex;flex-direction:column;min-width:0;min-height:0}.cvs{flex:1;min-height:0;width:100%;display:block;user-select:none}
+.cvh{padding:6px 12px;font-size:13px;min-height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb{display:flex;align-items:center;gap:6px;padding:6px 10px;flex-wrap:wrap;font-size:12px;border-bottom:1px solid var(--bd)}#cvr{border-top:1px solid var(--bd);border-bottom:0}
+.tb button{background:none;color:var(--tx);border:0;border-radius:6px;padding:4px 9px;font-size:12px}.tb button.on{background:var(--hl);color:var(--ac);font-weight:600}.tb button:hover{background:var(--hl)}
+.tb label{display:flex;align-items:center;gap:3px;cursor:pointer}.tb i{width:9px;height:9px;border-radius:2px;display:inline-block}.tb .sp{width:1px;height:16px;background:var(--bd);margin:0 4px}.tb .hint{margin-left:auto;color:var(--mu)}
+.cvl{border-left:1px solid var(--bd);display:flex;flex-direction:column;min-height:0}.cvq{padding:8px;border-bottom:1px solid var(--bd)}.cvq input{width:100%}.cvsc{flex:1;overflow:auto}.cvsc td:first-child{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:820px){.cvg{grid-template-columns:1fr;height:auto}.cvs{flex:none;height:360px}.cvl{border-left:0;border-top:1px solid var(--bd);max-height:380px}}
+.cvu{flex:none;height:182px;border-top:1px solid var(--bd);display:flex;flex-direction:column}.cvu svg{flex:1;min-height:0;width:100%;display:block;user-select:none}.cvuh{display:flex;justify-content:space-between;align-items:center;padding:3px 12px;font-size:12px}.cvuh button{background:none;color:var(--mu);border:0;font-size:15px;padding:0 4px;cursor:pointer}.cvu input[type=number]{width:56px;padding:2px 4px}
 </style></head><body><main>
 <h1>NSE Industry Tracker</h1>
 <div class="sub">Equal-weighted industry indices · stocks vs 10 &amp; 20 EMA · as of <span id="d"></span> · <span id="b" class="badge"></span></div>
 
+<div class="tabs"><button data-tab="D" class="on">Dashboard</button><button data-tab="C">Charts</button></div>
+<div id="tabD">
 <div class="panel"><h2>Industries <span class="sub" id="ic"></span></h2>
 <div class="scroll" style="max-height:340px"><table id="it"></table></div></div>
 
@@ -59,15 +71,24 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
 <div class="sub">Run <code>python nse_industry.py</code>, then upload or paste <code>industry.json</code>.</div>
 <input type="file" id="f" accept=".json"> <textarea id="t" placeholder="Paste industry.json here"></textarea>
 <button id="go" style="margin-top:8px">Load pasted JSON</button></div>
+</div>
+<div id="tabC" style="display:none"><div class="cvg">
+<div class="cvmain"><div class="tb" id="cvt"><button data-tf="d" class="on">D</button><button data-tf="w">W</button><button data-tf="m">M</button><span class="sp"></span><button data-ty="c" class="on">Candles</button><button data-ty="l">Line</button><span class="sp"></span><span class="sub">MA</span><span id="cvma" style="display:contents"></span><select id="cvm"><option value="e">EMA</option><option value="s">SMA</option></select></div>
+<div class="cvh" id="cvh"></div><svg id="cvs" class="cvs"></svg>
+<div class="cvu"><div class="cvuh"><span id="cvut"></span><button id="cvug" title="Turnover settings">⚙</button></div><div class="tb" id="cvus" style="display:none"></div><svg id="cvu"></svg></div>
+<div class="tb" id="cvr"><button data-rg="1M">1M</button><button data-rg="3M">3M</button><button data-rg="6M" class="on">6M</button><button data-rg="YTD">YTD</button><button data-rg="1Y">1Y</button><button data-rg="5Y">5Y</button><button data-rg="All">All</button><span class="hint">Wheel: zoom · Drag: pan · Double-click: reset · Space: next · Shift+Space: previous</span></div></div>
+<div class="cvl"><div class="cvq"><input type="text" id="cvq" placeholder="Search industry…"></div><div class="cvsc"><table id="cvtb"></table></div></div>
+</div></div>
 </main>
 <script>
 const $=i=>document.getElementById(i),fp=v=>(v>0?"+":"")+v.toFixed(2)+"%",cl=v=>v>0?"up":"dn";
+const ch=$("ch"),cvs=$("cvs"),cvu=$("cvu");
 let D=demo(),sel=null,ik="n",id=-1,sk="s",sd=1,S=[];
 function demo(){let s=11,r=()=>(s=(s*16807)%2147483647)/2147483647;
 const N=["Information Technology","Financial Services","Healthcare","Automobile","Capital Goods","Chemicals","FMCG","Metals & Mining","Oil Gas & Energy","Realty","Textiles","Consumer Durables"];
 const dates=[],inds={},stocks=[];
 for(let i=7600;i>=0;i--){const t=new Date(Date.UTC(2026,9,8)-i*864e5);if(![0,6].includes(t.getUTCDay()))dates.push(t.toISOString().slice(0,10))}
-N.forEach((n,k)=>{let v=100;const x=[],o=[],h=[],l=[],dr=(r()-.5)*.25;dates.forEach(()=>{const op=v*(1+(r()-.5)*.006);v*=1+dr/100+(r()-.5)*.02;const hi=Math.max(op,v)*(1+r()*.008),lo=Math.min(op,v)*(1-r()*.008);o.push(+op.toFixed(2));h.push(+hi.toFixed(2));l.push(+lo.toFixed(2));x.push(+v.toFixed(2))});inds[n]={o,h,l,c:x};
+N.forEach((n,k)=>{let v=100;const x=[],o=[],h=[],l=[],t=[],base=100+r()*400,dr=(r()-.5)*.25;dates.forEach(()=>{const op=v*(1+(r()-.5)*.006);v*=1+dr/100+(r()-.5)*.02;const hi=Math.max(op,v)*(1+r()*.008),lo=Math.min(op,v)*(1-r()*.008);o.push(+op.toFixed(2));h.push(+hi.toFixed(2));l.push(+lo.toFixed(2));x.push(+v.toFixed(2));t.push(+(base*(.6+r()*.8)*(1+Math.abs(v/op-1)*40)).toFixed(2))});inds[n]={o,h,l,c:x,t};
 const cnt=5+Math.floor(r()*20),tr=x[x.length-1]/x[x.length-8]-1;
 for(let j=0;j<cnt;j++)stocks.push({s:"DEMO"+(k+1)+"-"+(j+1),i:n,c:+(50+r()*2000).toFixed(1),ch:+((r()-.5)*4).toFixed(2),d10:+((tr*60+(r()-.5)*6)).toFixed(2),d20:+((tr*80+(r()-.5)*9)).toFixed(2)})});
 return{asof:dates[dates.length-1],dates,inds,stocks,demo:true}}
@@ -83,7 +104,7 @@ const H=[["name","Industry"],["n","Stocks"],["r1","1D"],["r1m","1M"],["p10","> 1
 it.innerHTML="<tr>"+H.map(h=>`<th data-k="${h[0]}">${h[1]}</th>`).join("")+"<th>Trend</th></tr>"+S.map((o,i)=>`<tr class="r${sel==o.name?" sel":""}" data-i="${i}"><td>${o.name}</td><td>${o.n}</td><td class="${cl(o.r1)}">${fp(o.r1)}</td><td class="${cl(o.r1m)}">${fp(o.r1m)}</td><td>${pc(o.p10)}</td><td>${pc(o.p20)}</td><td>${spark(o.x)}</td></tr>`).join("");
 it.querySelectorAll("th[data-k]").forEach(h=>h.onclick=()=>{const k=h.dataset.k;id=ik==k?-id:-1;ik=k;render()});
 it.querySelectorAll("tr.r").forEach(r=>r.onclick=()=>{const n=S[r.dataset.i].name;sel=sel==n?null:n;render();if(sel)$("dp").scrollIntoView({behavior:"smooth",block:"start"})});
-chart();stocks();detail();perf()}
+chart();stocks();detail();perf();if(V.act)vShow()}
 function detail(){const p=$("dp");if(!sel){p.style.display="none";return}
 const a=D.stocks.filter(s=>s.i==sel).sort((x,y)=>y.d10+y.d20-x.d10-x.d20);
 const mk=v=>`<span class="pill ${cl(v)}">${v>0?"✓ Above":"✗ Below"} · ${fp(v)}</span>`;
@@ -99,9 +120,63 @@ return{n,r:(c[e]/c[a]-1)*100,dd:dd*100,k:D.stocks.filter(s=>s.i==n).length}}).so
 pm.textContent=`${D.dates[a]} → ${D.dates[e]} · ${R.length} industries · ${R.filter(o=>o.r>0).length} up, ${R.filter(o=>o.r<=0).length} down · best: ${R[0].n}`;
 pt.innerHTML="<tr><th>#</th><th>Industry</th><th>Stocks</th><th>Return</th><th>Max drawdown</th><th style=\"min-width:120px\"></th></tr>"+R.map((o,i)=>`<tr class="r${sel==o.n?" sel":""}" data-n="${o.n.replace(/"/g,"&quot;")}"><td>${i+1}</td><td style="text-align:left">${o.n}</td><td>${o.k}</td><td class="${cl(o.r)}">${fp(o.r)}</td><td class="dn">${o.dd.toFixed(1)}%</td><td style="text-align:left"><div style="height:8px;width:${Math.max(2,Math.abs(o.r)/mx*100)}%;background:var(--${o.r>0?"up":"dn"});border-radius:4px"></div></td></tr>`).join("");
 pt.querySelectorAll("tr.r").forEach(r=>r.onclick=()=>{sel=r.dataset.n;render();ch.scrollIntoView({behavior:"smooth",block:"center"})})}
+const V={act:false,n:null,tf:"d",ty:"c",mt:"e",rg:"6M",on:new Set([10,20]),ks:"pc",dr:-1,tn:{ty:"c",st:"s",sl:{d:55,w:30,m:10},ft:"e",fl:{d:10,w:4,m:2},el:{d:55,w:30,m:10},vis:{sl:true,fl:true,e2:true}}};
+function vRows(){const q=cvq.value.trim().toLowerCase(),R=Object.keys(D.inds).filter(n=>!q||n.toLowerCase().includes(q)).map(n=>{const c=D.inds[n].c,L=c.length,l=c[L-1],p=L>1?c[L-2]:l;return{n,l,ch:l-p,pc:(l/p-1)*100}});
+R.sort((a,b)=>V.ks=="n"?a.n.localeCompare(b.n)*V.dr:(a[V.ks]-b[V.ks])*V.dr);return R}
+function vList(R){R=R||vRows();const H=[["n","Industry"],["l","Last"],["ch","Chg"],["pc","Chg%"]],e=s=>s.replace(/"/g,"&quot;");
+cvtb.innerHTML="<tr>"+H.map(([k,l])=>`<th data-k="${k}">${l}${V.ks==k?(V.dr>0?" ▲":" ▼"):""}</th>`).join("")+"</tr>"+R.map(o=>`<tr class="r${o.n==V.n?" sel":""}" data-n="${e(o.n)}"><td title="${e(o.n)}">${o.n}</td><td>${o.l.toFixed(2)}</td><td class="${cl(o.ch)}">${(o.ch>0?"+":"")+o.ch.toFixed(2)}</td><td class="${cl(o.pc)}">${fp(o.pc)}</td></tr>`).join("");
+const a=cvtb.querySelector("tr.sel");if(a&&a.scrollIntoView)a.scrollIntoView({block:"nearest"})}
+function vShow(){const R=vRows();if(!V.n||!D.inds[V.n])V.n=R.length?R[0].n:Object.keys(D.inds)[0];sel=V.n;vList(R);vDraw()}
+function vGo(d){const R=vRows();if(!R.length)return;let i=R.findIndex(o=>o.n==V.n);i=i<0?0:(i+d+R.length)%R.length;V.n=R[i].n;sel=V.n;vList(R);vDraw()}
+function tab(k){V.act=k=="C";$("tabD").style.display=k=="D"?"":"none";$("tabC").style.display=k=="C"?"":"none";document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x.dataset.tab==k));
+if(V.act){if(sel&&D.inds[sel])V.n=sel;vShow()}else render()}
+function vClamp(a,b){const N=V.N,l=Math.min(N,Math.max(8,b-a));a=Math.max(0,Math.min(a,N-l));return[a,a+l]}
+function vTurn(c){const{all,a0,a1,B,x,W,Rm,Lm,n,bw,lg}=c,H=Math.max(100,cvu.getBoundingClientRect().height||170),T=V.tn,L=T.sl[V.tf],F=T.fl[V.tf];
+cvu.setAttribute("viewBox",`0 0 ${W} ${H}`);
+if(!all.some(b=>b.t!=null)){cvu.innerHTML="";cvut.innerHTML="<b>Turnover</b> <span class=\"sub\">no turnover data in this file – re-run nse_industry.py</span>";return()=>{}}
+const ts=all.map(b=>b.t||0),sl=ma(ts,L,T.st),fa=ma(ts,F,T.ft),S=ts.slice(a0,a1),sv=sl.slice(a0,a1),fv=fa.slice(a0,a1),E=T.el[V.tf],ev=ma(ts,E,"e").slice(a0,a1);
+let hi=0;ts.slice(Math.max(0,a0-1),a1).forEach(v=>hi=Math.max(hi,v));[T.vis.sl?sv:[],T.vis.fl?fv:[],T.vis.e2?ev:[]].flat().forEach(v=>{if(v!==null)hi=Math.max(hi,v)});hi=hi*1.1||1;
+const Tm=6,Bm=4,y=v=>Tm+(hi-v)*(H-Tm-Bm)/hi,f=v=>v>=100?v.toFixed(0):v.toFixed(1);let s="";
+for(let g=1;g<=3;g++){const v=hi*g/4;s+=`<line x1="0" x2="${W-Rm}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" opacity=".1"/><text x="${W-Rm+6}" y="${y(v)+3}" font-size="11" fill="currentColor" opacity=".75">${f(v)}</text>`}
+B.forEach((b,i)=>{const v=S[i],p=a0+i>0?ts[a0+i-1]:v,sp=sv[i]!==null&&v>=2*sv[i];
+if(T.ty=="c"){const col=sp?"#f59e0b":v>=p?"var(--up)":"var(--dn)",yo=y(p),yc=y(v);s+=`<rect x="${x(i)-bw/2}" y="${Math.min(yo,yc)}" width="${bw}" height="${Math.max(1,Math.abs(yo-yc))}" fill="${col}"/>`;return}
+if(!v)return;const col=sp?"#f59e0b":b.c>=b.o?"var(--up)":"var(--dn)";s+=`<rect x="${x(i)-bw/2}" y="${y(v)}" width="${bw}" height="${Math.max(1,y(0)-y(v))}" fill="${col}" opacity=".6"/>`});
+[[sv,"#ef4444","sl"],[fv,"#14b8a6","fl"],[ev,"#3b82f6","e2"]].forEach(([a,col,k])=>{if(!T.vis[k])return;s+=`<polyline fill="none" stroke="${col}" stroke-width="1.6" points="${a.map((v,i)=>v===null?"":x(i)+","+y(v)).filter(Boolean).join(" ")}"/>`});
+s+=`<line id="ux1" y1="0" y2="${H}" stroke="currentColor" opacity=".5" stroke-dasharray="3 3" style="display:none"/>`;
+cvu.innerHTML=s;cvu.style.color="var(--mu)";
+const g=(a,i)=>a[i]==null?"–":f(a[i]),tl=i=>{cvut.innerHTML=`<b>Turnover</b> <span class="sub">₹ Cr · ${V.tf.toUpperCase()}</span> ${T.vis.sl?` &nbsp;<span style="color:#ef4444">${T.st=="s"?"SMA":"EMA"}(${L}) ${g(sv,i)}</span>`:""}${T.vis.fl?` &nbsp;<span style="color:#14b8a6">${T.ft=="e"?"EMA":"SMA"}(${F}) ${g(fv,i)}</span>`:""}${T.vis.e2?` &nbsp;<span style="color:#3b82f6">EMA(${E}) ${g(ev,i)}</span>`:""} &nbsp;<span class="sub">${f(S[i])}</span>`},
+tu=(i,show)=>{tl(i);const u=cvu.querySelector("#ux1");u.style.display=show?"":"none";if(show){u.setAttribute("x1",x(i));u.setAttribute("x2",x(i))}};tu(n-1,false);
+cvu.onmousemove=ev=>{const rc=cvu.getBoundingClientRect(),px=(ev.clientX-rc.left)*W/(rc.width||W),i=Math.max(0,Math.min(n-1,Math.floor((px-Lm)/((W-Lm-Rm)/n))));lg(i);tu(i,true)};
+cvu.onmouseleave=()=>{tu(n-1,false);lg(n-1)};
+return tu}
+function vDraw(){if(!V.n||!D.inds[V.n])return;const all=bars(V.n,V.tf),Ls=all[all.length-1];let a0=0;
+if(V.rg!="All"){let c;if(V.rg=="YTD")c=Ls.d.slice(0,4)+"-01-01";else{const t=new Date(Ls.d+"T00:00:00Z");t.setUTCMonth(t.getUTCMonth()-{"1M":1,"3M":3,"6M":6,"1Y":12,"5Y":60}[V.rg]);c=t.toISOString().slice(0,10)}a0=all.findIndex(b=>b.d>=c);if(a0<0)a0=0}
+a0=Math.min(a0,Math.max(0,all.length-12));const key=V.n+"|"+V.tf+"|"+V.rg;V.N=all.length;if(key!=V.key||!V.view){V.key=key;V.view=[a0,all.length]}V.view=vClamp(V.view[0],V.view[1]);a0=V.view[0];const a1=V.view[1];
+cvt.querySelectorAll("[data-tf]").forEach(b=>b.classList.toggle("on",b.dataset.tf==V.tf));cvt.querySelectorAll("[data-ty]").forEach(b=>b.classList.toggle("on",b.dataset.ty==V.ty));cvr.querySelectorAll("[data-rg]").forEach(b=>b.classList.toggle("on",b.dataset.rg==V.rg));
+const B=all.slice(a0,a1),n=B.length,cs=all.map(b=>b.c),mas=MAS.filter(m=>V.on.has(m)).map(m=>({m,c:MC[MAS.indexOf(m)],v:ma(cs,m,V.mt).slice(a0,a1)}));
+const r=cvs.getBoundingClientRect(),W=Math.max(320,r.width),H=Math.max(260,r.height),Lm=6,Rm=64,Tm=8,Bm=24;cvs.setAttribute("viewBox",`0 0 ${W} ${H}`);V.W=W;
+let lo=Infinity,hi=-Infinity;B.forEach(b=>{lo=Math.min(lo,b.l);hi=Math.max(hi,b.h)});mas.forEach(o=>o.v.forEach(v=>{if(v!==null){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+const pad=(hi-lo)*.06||1,x=i=>Lm+(i+.5)*(W-Lm-Rm)/n,y=v=>Tm+(hi+pad-v)*(H-Tm-Bm)/(hi-lo+2*pad),inv=py=>hi+pad-(py-Tm)*(hi-lo+2*pad)/(H-Tm-Bm),f=v=>v.toFixed(v<100?2:1),line=V.ty=="l"||n>1500;let s="";
+for(let g=1;g<=5;g++){const v=lo-pad+(hi-lo+2*pad)*g/6;s+=`<line x1="0" x2="${W-Rm}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" opacity=".1"/><text x="${W-Rm+6}" y="${y(v)+3}" font-size="11" fill="currentColor" opacity=".75">${f(v)}</text>`}
+const bw=Math.max(1,Math.min(16,(W-Lm-Rm)/n*.7));
+if(line)s+=`<polyline fill="none" stroke="var(--ac)" stroke-width="1.8" points="${B.map((b,i)=>x(i)+","+y(b.c)).join(" ")}"/>`;
+else B.forEach((b,i)=>{const c=b.c>=b.o?"var(--up)":"var(--dn)",yo=y(b.o),yc=y(b.c);s+=`<line x1="${x(i)}" x2="${x(i)}" y1="${y(b.h)}" y2="${y(b.l)}" stroke="${c}"/><rect x="${x(i)-bw/2}" y="${Math.min(yo,yc)}" width="${bw}" height="${Math.max(1,Math.abs(yo-yc))}" fill="${c}"/>`});
+mas.forEach(o=>{s+=`<polyline fill="none" stroke="${o.c}" stroke-width="1.4" points="${o.v.map((v,i)=>v===null?"":x(i)+","+y(v)).filter(Boolean).join(" ")}"/>`});
+const la=B[n-1],lc=la.c>=la.o?"var(--up)":"var(--dn)";
+if(a1==V.N)s+=`<line x1="0" x2="${W-Rm}" y1="${y(la.c)}" y2="${y(la.c)}" stroke="${lc}" stroke-dasharray="2 3"/><rect x="${W-Rm}" y="${y(la.c)-9}" width="${Rm-2}" height="18" rx="3" fill="${lc}"/><text x="${W-Rm+6}" y="${y(la.c)+4}" font-size="11" fill="#fff">${f(la.c)}</text>`;
+for(let g=0;g<=5;g++){const i=Math.round(g*(n-1)/5);s+=`<text x="${x(i)}" y="${H-7}" font-size="11" text-anchor="${g==0?"start":g==5?"end":"middle"}" fill="currentColor" opacity=".75">${B[i].d}</text>`}
+s+=`<g id="cvx" style="display:none;pointer-events:none"><line id="cx1" y1="0" y2="${H-Bm}" stroke="currentColor" opacity=".5" stroke-dasharray="3 3"/><line id="cx2" x1="0" x2="${W-Rm}" stroke="currentColor" opacity=".5" stroke-dasharray="3 3"/><rect id="cx3" x="${W-Rm}" width="${Rm-2}" height="18" rx="3" fill="var(--tx)"/><text id="cx4" x="${W-Rm+6}" font-size="11" fill="var(--bg)"></text></g>`;
+cvs.innerHTML=s;cvs.style.color="var(--mu)";
+const lg=i=>{const b=B[i],pv=i>0?B[i-1].c:(a0>0?all[a0-1].c:b.o),ch=b.c-pv,c=ch>=0?"up":"dn";
+cvh.innerHTML=`<b>${V.n}</b> · ${V.tf.toUpperCase()} &nbsp;<span class="${c}">O ${f(b.o)} H ${f(b.h)} L ${f(b.l)} C ${f(b.c)} ${ch>=0?"+":""}${f(ch)} (${fp(ch/pv*100)})</span> &nbsp;<span class="sub">${b.d}</span>`+mas.map(o=>` &nbsp;<span style="color:${o.c}">${V.mt=="e"?"EMA":"SMA"} ${o.m} ${o.v[i]==null?"–":f(o.v[i])}</span>`).join("")};lg(n-1);
+const tu=vTurn({all,a0,a1,B,x,W,Rm,Lm,n,bw,lg});
+const q=id=>cvs.querySelector("#"+id);
+cvs.onmousemove=ev=>{const rc=cvs.getBoundingClientRect(),px=(ev.clientX-rc.left)*W/(rc.width||W),py=(ev.clientY-rc.top)*H/(rc.height||H),i=Math.max(0,Math.min(n-1,Math.floor((px-Lm)/((W-Lm-Rm)/n))));lg(i);tu(i,true);
+if(py>Tm&&py<H-Bm&&px<W-Rm){q("cvx").style.display="";q("cx1").setAttribute("x1",x(i));q("cx1").setAttribute("x2",x(i));q("cx2").setAttribute("y1",py);q("cx2").setAttribute("y2",py);q("cx3").setAttribute("y",py-9);q("cx4").setAttribute("y",py+4);q("cx4").textContent=f(inv(py))}else q("cvx").style.display="none"};
+cvs.onmouseleave=()=>{q("cvx").style.display="none";lg(n-1);tu(n-1,false)}}
 function bars(name,tf){const I=D.inds[name],o=[];let key=null,b;
 D.dates.forEach((d,i)=>{let k=d;if(tf=="m")k=d.slice(0,7);else if(tf=="w"){const u=new Date(d+"T00:00:00Z");u.setUTCDate(u.getUTCDate()-(u.getUTCDay()+6)%7);k=u.toISOString().slice(0,10)}
-if(k!=key){key=k;b={d,o:I.o[i],h:I.h[i],l:I.l[i],c:I.c[i]};o.push(b)}else{b.h=Math.max(b.h,I.h[i]);b.l=Math.min(b.l,I.l[i]);b.c=I.c[i]}});return o}
+if(k!=key){key=k;b={d,o:I.o[i],h:I.h[i],l:I.l[i],c:I.c[i],t:I.t?I.t[i]:null};o.push(b)}else{b.h=Math.max(b.h,I.h[i]);b.l=Math.min(b.l,I.l[i]);b.c=I.c[i];if(I.t)b.t+=I.t[i]}});return o}
 function ma(c,n,t){const o=[];if(t=="s"){let s=0;c.forEach((v,i)=>{s+=v;if(i>=n)s-=c[i-n];o.push(i>=n-1?s/n:null)})}else{const k=2/(n+1);let e=0;c.forEach((v,i)=>{e=i?v*k+e*(1-k):v;o.push(i>=n-1?e:null)})}return o}
 function chart(){const names=S.map(o=>o.name).sort(),cur=sel&&D.inds[sel]?sel:names[0],tf=$("tf").value,ty=$("ty").value,rg=$("rg").value,mt=$("mt").value;
 ci.innerHTML=names.map(n=>`<option${n==cur?" selected":""}>${n.replace(/&/g,"&amp;")}</option>`).join("");
@@ -136,6 +211,27 @@ mal.innerHTML=MAS.map((m,i)=>`<label><input type="checkbox" data-m="${m}"${maOn.
 mal.querySelectorAll("input").forEach(x=>x.onchange=()=>{x.checked?maOn.add(+x.dataset.m):maOn.delete(+x.dataset.m);chart()});
 document.querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{const y=+b.dataset.y,l=D.asof,t=new Date(l+"T00:00:00Z");t.setUTCFullYear(t.getUTCFullYear()-y);const v=t.toISOString().slice(0,10);pe.value=l;ps.value=y&&v>D.dates[0]?v:D.dates[0];perf();chart()});
 ps.onchange=pe.onchange=()=>{perf();chart()};initDates();
+cvma.innerHTML=MAS.map((m,i)=>`<label><input type="checkbox" data-ma="${m}"${V.on.has(m)?" checked":""}><i style="background:${MC[i]}"></i>${m}</label>`).join("");
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab(b.dataset.tab);b.blur()});
+cvt.onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.tf)V.tf=b.dataset.tf;if(b.dataset.ty)V.ty=b.dataset.ty;vDraw();b.blur()};
+cvt.onchange=e=>{const t=e.target;if(t.dataset.ma){t.checked?V.on.add(+t.dataset.ma):V.on.delete(+t.dataset.ma)}else if(t.id=="cvm")V.mt=t.value;vDraw();t.blur()};
+cvr.onclick=e=>{const b=e.target.closest("button");if(!b||!b.dataset.rg)return;V.rg=b.dataset.rg;V.view=null;vDraw();b.blur()};
+cvq.oninput=()=>vList();
+const nI=(g,t)=>`${t.toUpperCase()} <input type="number" min="2" max="500" data-g="${g}" data-t="${t}" value="${V.tn[g][t]}">`,nR=g=>["d","w","m"].map(t=>nI(g,t)).join(" "),vk=k=>`<label><input type="checkbox" data-v="${k}"${V.tn.vis[k]?" checked":""}>`;
+cvus.innerHTML='Style <select data-s="ty"><option value="c">Candles</option><option value="b">Bars</option></select> &nbsp;│&nbsp; '+vk("sl")+' Slow</label> <select data-s="st"><option value="s">SMA</option><option value="e">EMA</option></select> '+nR("sl")+' &nbsp;│&nbsp; '+vk("fl")+' Fast</label> <select data-s="ft"><option value="e">EMA</option><option value="s">SMA</option></select> '+nR("fl")+' &nbsp;│&nbsp; '+vk("e2")+' EMA</label> '+nR("el");
+cvug.onclick=()=>{cvus.style.display=cvus.style.display=="none"?"":"none";cvug.blur()};
+cvus.onchange=e=>{const t=e.target;if(t.dataset.s)V.tn[t.dataset.s]=t.value;else if(t.dataset.v)V.tn.vis[t.dataset.v]=t.checked;else if(t.dataset.g){const n=Math.max(2,Math.min(500,+t.value||2));V.tn[t.dataset.g][t.dataset.t]=n;t.value=n}vDraw();t.blur()};
+cvtb.onclick=e=>{const th=e.target.closest("th[data-k]");if(th){const k=th.dataset.k;if(V.ks==k)V.dr=-V.dr;else{V.ks=k;V.dr=k=="n"?1:-1}vList();return}const tr=e.target.closest("tr.r");if(tr){V.n=tr.dataset.n;sel=V.n;vList();vDraw()}};
+addEventListener("keydown",e=>{if(!V.act)return;const t=e.target;if(t.tagName=="TEXTAREA"||(t.tagName=="INPUT"&&(t.type=="text"||t.type=="number")))return;
+const nx=e.key==" "&&!e.shiftKey||e.key=="ArrowDown"||e.key=="ArrowRight",pv=e.key==" "&&e.shiftKey||e.key=="ArrowUp"||e.key=="ArrowLeft";if(!nx&&!pv)return;
+e.preventDefault();if(t.blur)t.blur();vGo(nx?1:-1)});
+addEventListener("resize",()=>{if(V.act)vDraw()});
+cvs.addEventListener("wheel",e=>{e.preventDefault();if(!V.view)return;const rc=cvs.getBoundingClientRect(),W=V.W||rc.width,rw=rc.width||W,fr=Math.max(0,Math.min(1,((e.clientX-rc.left)*W/rw-6)/(W-70))),[a,b]=V.view,len=b-a,dy=e.deltaY*(e.deltaMode==1?33:1);
+let nl=Math.round(len*Math.exp(dy*.0015));if(nl==len&&dy)nl+=dy<0?-1:1;nl=Math.max(8,Math.min(V.N,nl));const na=Math.round(a+fr*len-fr*nl);V.view=vClamp(na,na+nl);vDraw()},{passive:false});
+cvs.addEventListener("mousedown",e=>{if(e.button==0&&V.view){V.drag={x:e.clientX,v:[...V.view]};cvs.style.cursor="grabbing"}});
+addEventListener("mousemove",e=>{if(!V.drag)return;const rc=cvs.getBoundingClientRect(),W=V.W||rc.width,rw=rc.width||W,len=V.drag.v[1]-V.drag.v[0],sh=Math.round(-(e.clientX-V.drag.x)*(W/rw)/((W-70)/len));V.view=vClamp(V.drag.v[0]+sh,V.drag.v[1]+sh);vDraw()});
+addEventListener("mouseup",()=>{V.drag=null;cvs.style.cursor=""});
+cvs.ondblclick=()=>{V.view=null;vDraw()};
 render();
 fetch("industry.json",{cache:"no-store"}).then(r=>r.ok?r.text():Promise.reject()).then(load).catch(()=>{});
 </script></body></html>
