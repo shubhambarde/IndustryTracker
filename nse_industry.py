@@ -43,14 +43,14 @@ for k in range(0, len(syms), CHUNK):
     for _ in range(3):
         try:
             c = yf.download(part, start=START, auto_adjust=True, progress=False, threads=True)
-            frames.append(c[["Open", "High", "Low", "Close", "Volume"]])
+            frames.append(c[["Open", "High", "Low", "Close"]])
             break
         except Exception as e:
             print("retry", e); time.sleep(5)
     print(f"  prices {min(k + CHUNK, len(syms))}/{len(syms)}")
 px = pd.concat(frames, axis=1)
 px = px.loc[:, ~px.columns.duplicated()].dropna(how="all")
-OHLC = {f: px[f].dropna(how="all", axis=1) for f in ["Open", "High", "Low", "Close", "Volume"]}
+OHLC = {f: px[f].dropna(how="all", axis=1) for f in ["Open", "High", "Low", "Close"]}
 close = OHLC["Close"]
 last = close.apply(lambda s: s.last_valid_index())
 keep = close.columns[last >= close.index[-1] - pd.Timedelta(days=STALE_DAYS)]
@@ -130,10 +130,7 @@ def build_index(mem):
     o.iloc[0] = h.iloc[0] = l.iloc[0] = 100
     h = pd.concat([h, o, c], axis=1).max(axis=1)
     l = pd.concat([l, o, c], axis=1).min(axis=1)
-    res = {k: [round(float(v), 2) for v in x] for k, x in zip("ohlc", (o, h, l, c))}
-    # turnover (Rs crore) = sum of close x volume over member stocks, from Yahoo data (approximate)
-    res["t"] = [round(float(v), 2) for v in (close[mem] * OHLC["Volume"][mem]).sum(axis=1) / 1e7]
-    return res
+    return {k: [round(float(v), 2) for v in x] for k, x in zip("ohlc", (o, h, l, c))}
 
 
 inds = {name: build_index([r["s"] for r in rows if r["i"] == name]) for name in sorted({r["i"] for r in rows})}
